@@ -1,12 +1,14 @@
 from pathlib import Path
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel
 
 from rag_core.ingestion.ingestion import load_document
 from rag_core.chunking.chunking import create_chunks
 from rag_core.vector_store.vector_store import (
-   sync_document_chunks,delete_document_chunks,
+   sync_document_chunks,
+   delete_document_chunks,
+   get_indexed_chunk_count,
 )
 
 
@@ -33,11 +35,11 @@ def index_document(
     )
 
     if not file_path.exists():
-
-        return {
-            "status": "error",
-            "message": "File not found"
-        }
+        raise HTTPException(
+            status_code=404,
+            detail="File not found"
+        )
+        
 
     # --------------------------------------------------
     # Load document
@@ -89,4 +91,18 @@ def delete_document(
         "document_id":document_id,
         "deleted_chunks": result["deleted"]
     }
+
+
+@router.get("/internal/stats")
+def get_stats(request: Request):
+
+    embedding_model = request.app.state.embedding_model
+    indexed_chunks = get_indexed_chunk_count(
+
+        embedding_model
+
+    )
+    return {
+        "indexed_chunks": indexed_chunks
+    } 
 

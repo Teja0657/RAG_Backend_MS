@@ -54,7 +54,6 @@ Benefits:
 - Better organization
 - Easier testing
 - Improved readability
-- import them as a packages by adding init into the folder.
 
 Table: Function Components
 Component | Description
@@ -66,7 +65,7 @@ argument | Actual value passed
 ==================================================
 PAGE 5: OBJECT-ORIENTED PROGRAMMING
 
-Object-Oriented Programming (OOP) in Python is a programming paradigm that uses classes and objects to structure software into reusable, modular, and maintainable components. Rather than relying solely on sequential functions, Python's OOP model revolves around four core principles: encapsulation (bundling data and methods within a class), abstraction (hiding complex implementation details), inheritance (reusing and extending existing code hierarchies), and polymorphism (allowing different classes to be treated through a common interface).
+Python supports object-oriented programming (OOP). OOP allows developers to model real-world systems using classes and objects. Common concepts include encapsulation, inheritance, polymorphism, and abstraction.
 
 Table: OOP Concepts
 Concept | Description
@@ -129,17 +128,11 @@ Django | Full-stack applications
 Flask | Lightweight web apps
 FastAPI | High-performance APIs
 
-==================================================
-PAGE 10: PYTHON IN AI AND FUTURE TRENDS
 
-Python plays a significant role in artificial intelligence and machine learning. Frameworks such as TensorFlow and PyTorch enable advanced model development. Python is expected to remain one of the most influential programming languages due to its ecosystem and versatility.
-
-Table: AI Ecosystem
-Tool | Category
-TensorFlow | Deep Learning
-PyTorch | Deep Learning
-Transformers | NLP
-LangChain | LLM Applications
-Chroma | Vector Database Integration
-
-END OF DOCUMENT
+AGENTIC RAG
+-> Building hybrid rag
+-> convert to fastapi + microservices
+-> convert hybrid rag to agentic rag
+-> use MySQL database
+-> use api gateway to route
+-> use Langsmith for evaluation

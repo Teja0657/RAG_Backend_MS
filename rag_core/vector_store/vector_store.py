@@ -280,3 +280,19 @@ def delete_document_chunks(
     return {
         "deleted": len(existing_ids)
     }
+
+# ==========================================================
+# COLLECTION STATS
+# ==========================================================
+
+def get_indexed_chunk_count(embedding_model):
+    """
+    Return the total number of chunks currently
+    indexed in the Chroma collection.
+    """
+    vector_store = get_vector_store(
+        embedding_model
+    )
+    collection = vector_store._collection
+    return collection.count() 
+

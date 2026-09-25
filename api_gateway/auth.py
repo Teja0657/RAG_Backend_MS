@@ -1,6 +1,8 @@
 import os
 
 import jwt
+
+from api_gateway.user_service import upsert_user
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jwt import PyJWKClient
@@ -22,6 +24,7 @@ jwks_client = PyJWKClient(
 )
 
 
+
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ):
@@ -37,7 +40,8 @@ def get_current_user(
             audience=AUTH0_AUDIENCE,
             issuer=ISSUER,
         )
-
+        upsert_user(payload)
+        
         return payload
 
     except jwt.PyJWTError:

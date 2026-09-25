@@ -1,3 +1,5 @@
+import shutil
+
 import hashlib
 from pathlib import Path
 
@@ -7,10 +9,12 @@ from fastapi import (
     Depends,
     File,
     UploadFile,
+    HTTPException,
+    UploadFile
 )
 from sqlalchemy.orm import Session
 
-from document_service.database import get_db
+from document_service.database import get_db, SessionLocal
 from document_service.models import Document
 
 
@@ -194,124 +198,78 @@ def list_documents(
 async def update_document(
     document_id: str,
     file: UploadFile = File(...),
-    db: Session = Depends(get_db),
 ):
-    
-    # ------------------------------------------------------
-    # 1. Validate filename
-    # ------------------------------------------------------
+    db = SessionLocal()
 
-    if not file.filename:
-
-        return {
-            "status": "error",
-            "message": "Filename is required",
-        }
-
-    # ------------------------------------------------------
-    # 2. Find existing document
-    # ------------------------------------------------------
-
-    document = (
-        db.query(Document)
-        .filter(Document.id == document_id)
-        .first()
-    )
+    document = db.query(Document).filter(
+        Document.id == document_id
+    ).first()
 
     if not document:
+        db.close()
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found",
+        )
 
-        return {
-            "status": "error",
-            "message": "Document not found",
-            "document_id": document_id,
-        }
-    
-    previous_status= document.status
-    document.status="PROCESSING"
+    old_file_path = Path(document.file_path)
 
-    # ------------------------------------------------------
-    # 3. Prepare storage
-    # ------------------------------------------------------
-
-    STORAGE_DIR.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    old_file_path = Path(
-        document.file_path
-    )
-
-    # Temporary file used for safe indexing
-    file_extenstion=Path(file.filename).suffix
-    temp_file_path=(
+    # Keep the same document ID, but create a temporary replacement file
+    temp_file_path = (
         STORAGE_DIR
-        /f".{document_id}.update{file_extenstion}"
+        / f".{document_id}.update{Path(file.filename).suffix}"
     )
-    # ------------------------------------------------------
-    # 4. Save replacement file temporarily
-    # ------------------------------------------------------
 
     try:
-
-        with open(
-            temp_file_path,
-            "wb",
-        ) as output_file:
-
-            while chunk := await file.read(
-                1024 * 1024
-            ):
-
-                output_file.write(chunk)
-
-        # --------------------------------------------------
-        # 5. Calculate next version
-        # --------------------------------------------------
+        # -------------------------------------------------
+        # 1. Save new file temporarily
+        # -------------------------------------------------
+        with temp_file_path.open("wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
         new_version = document.version + 1
 
-        # --------------------------------------------------
-        # 6. Mark as PROCESSING
-        # --------------------------------------------------
-
-        document.status = "PROCESSING"
-
-        db.commit()
-
-        # --------------------------------------------------
-        # 7. Ask RAG Service to index NEW file
-        # --------------------------------------------------
-
+        # -------------------------------------------------
+        # 2. Ask RAG service to index the new version
+        # -------------------------------------------------
         async with httpx.AsyncClient() as client:
-
             response = await client.post(
                 f"{RAG_SERVICE_URL}/internal/documents/index",
                 json={
-                    "document_id": document.id,
+                    "document_id": document_id,
                     "document_version": new_version,
-                    "file_path": str(temp_file_path),
+                    "file_path": str(temp_file_path.resolve()),
                 },
                 timeout=None,
             )
 
-            response.raise_for_status()
+        # IMPORTANT:
+        # Do not treat HTTP 200 alone as success.
+        response_data = response.json()
 
-        # --------------------------------------------------
-        # 8. RAG indexing succeeded
-        # --------------------------------------------------
+        if (
+            response.status_code != 200
+            or response_data.get("status") != "success"
+        ):
+            raise HTTPException(
+                status_code=500,
+                detail={
+                    "message": "RAG indexing failed",
+                    "rag_response": response_data,
+                },
+            )
 
-        # Replace old physical file only AFTER successful
-        # RAG indexing.
+        # -------------------------------------------------
+        # 3. Replace the old physical file
+        # -------------------------------------------------
         temp_file_path.replace(old_file_path)
 
-        # --------------------------------------------------
-        # 9. Update MySQL metadata
-        # --------------------------------------------------
-
-        document.version = new_version
+        # -------------------------------------------------
+        # 4. Update database ONLY after RAG succeeds
+        # -------------------------------------------------
         document.filename = file.filename
         document.file_path = str(old_file_path)
+        document.version = new_version
         document.status = "READY"
 
         db.commit()
@@ -319,36 +277,39 @@ async def update_document(
 
         return {
             "status": "success",
-            "document_id": document.id,
-            "filename": document.filename,
-            "version": document.version,
-            "status": document.status,
+            "message": "Document updated successfully",
+            "document": {
+                "id": document.id,
+                "filename": document.filename,
+                "version": document.version,
+                "status": document.status,
+            },
+            "rag": response_data,
         }
 
-    except Exception as e:
-
-        # --------------------------------------------------
-        # Cleanup temporary file
-        # --------------------------------------------------
-
+    except HTTPException:
         if temp_file_path.exists():
-
             temp_file_path.unlink()
 
-        # --------------------------------------------------
-        # Keep original document metadata
-        # --------------------------------------------------
-
-        document.status = previous_status
-
+        document.status = "FAILED"
         db.commit()
 
-        return {
-            "status": "error",
-            "document_id": document.id,
-            "version": document.version,
-            "message": str(e),
-        }
+        raise
+
+    except Exception as e:
+        if temp_file_path.exists():
+            temp_file_path.unlink()
+
+        document.status = "FAILED"
+        db.commit()
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Document update failed: {str(e)}",
+        )
+
+    finally:
+        db.close()
 
 
 # ==========================================================
