@@ -1,16 +1,26 @@
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
+import os
+
 from fastapi import FastAPI
 
 from rag_service.routes.query import router as query_router
 from rag_service.routes.documents import router as documents_router
 from rag_core.embedding.embedding import get_embedding_model
 
+load_dotenv()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-
     print("Starting RAG Service...")
 
+    print('langsmith tracing:', os.getenv("LANGSMITH_TRACING"))
+    print('langsmith project:', os.getenv("LANGSMITH_PROJECT"))
+    print('langsmith tracing:', 'SET' if os.getenv("LANGSMITH_API_KEY") else 'MISSING')
+
+   
     print("Loading embedding model...")
     embedding_model = get_embedding_model()
 

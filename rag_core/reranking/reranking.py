@@ -2,10 +2,19 @@ import json
 
 from rag_core.generation.generation import get_llm
 
+from langsmith import traceable
 
 DEFAULT_TOP_K = 5
 
-
+@traceable(
+    name="Reranking",
+    tags=["rag","reranking"],
+    metadata={
+        "default_top_k": DEFAULT_TOP_K,
+        "models": "claude, gemini",
+    }
+           
+    )
 def rerank_documents(
     question,
     documents,

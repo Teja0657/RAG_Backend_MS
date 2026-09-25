@@ -43,3 +43,9 @@ langgraph
 
 requests
 sse-starlette
+
+PyJWT
+cryptography
+httpx
+
+langsmith

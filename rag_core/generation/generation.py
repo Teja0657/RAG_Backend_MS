@@ -8,6 +8,7 @@ from langchain_anthropic import (
     ChatAnthropic
 )
 
+from langsmith import traceable
 
 load_dotenv()
 
@@ -59,6 +60,7 @@ def get_llm(model="claude"):
     )
 
 
+@traceable(name="Generation", tags=["rag","generation"],)
 def generate_answer(
     question,
     documents,

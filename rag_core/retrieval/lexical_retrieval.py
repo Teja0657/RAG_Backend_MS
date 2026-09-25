@@ -4,6 +4,7 @@ import unicodedata
 import chromadb
 from rank_bm25 import BM25Okapi
 
+from langsmith import traceable
 
 CHROMA_PATH = "./chroma_db"
 COLLECTION_NAME = "knowledge_base"
@@ -29,7 +30,13 @@ def tokenize(text):
         text
     )
 
-
+@traceable(name="BM25 Retrieval",
+    tags=["rag", "retrieval","bm25"],
+        metadata={
+            "default_top_k": DEFAULT_K,
+            "retrieval_method": "BM25",
+            "vector_store": "chroma",
+        } )
 def lexical_search(
     question,
     k=DEFAULT_K,

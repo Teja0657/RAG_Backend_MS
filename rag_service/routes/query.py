@@ -3,11 +3,13 @@ from pydantic import BaseModel
 from fastapi.responses import StreamingResponse
 from sse_starlette import EventSourceResponse
 
+
 from rag_core.retrieval.hybrid_retrieval import hybrid_search
 from rag_core.reranking.reranking import rerank_documents
 from rag_core.generation.generation import generate_answer, generate_answer_stream
 
 
+from langsmith import traceable
 
 router = APIRouter()
 
@@ -17,6 +19,7 @@ class QueryRequest(BaseModel):
 
 
 @router.post("/internal/query")
+@traceable(name="RAG Query", tags=["rag", "query"],)
 def query_rag(request: QueryRequest):
 
     candidates = hybrid_search(
@@ -66,7 +69,7 @@ def query_rag_stream(request: QueryRequest):
                     "event" : "token",
                     "data" : chunk
                 }
-                yield{
+            yield{
                     "event": "done",
                     "data": "complete"
                 }

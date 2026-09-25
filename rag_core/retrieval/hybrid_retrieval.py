@@ -3,6 +3,7 @@ from langchain_core.documents import Document
 from rag_core.retrieval.semantic_retrieval import retrieve_documents
 from rag_core.retrieval.lexical_retrieval import lexical_search
 
+from langsmith import traceable
 
 SEMANTIC_K = 8
 BM25_K = 8
@@ -13,7 +14,16 @@ RRF_K = 60
 def get_chunk_id(document):
     return document.metadata.get("chunk_id") or document.page_content
 
-
+@traceable(
+        name="Hybrid Retrieval",
+        tags=["rag", "retrieval"],
+        metadata={
+            "semantic_k": SEMANTIC_K,
+            "bm25_k": BM25_K,
+            "rrf_candidates": RRF_CANDIDATES,
+            "rrf_k": RRF_K,
+        }
+    )
 def hybrid_search(question, k=RRF_CANDIDATES, verbose=False, metadata_filter=None):
 
     # --------------------------------------------------
