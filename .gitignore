@@ -17,6 +17,10 @@ __pycache__/
 .ruff_cache/
 .coverage
 
+# Jupyter / notebook files
+*.ipynb
+.ipynb_checkpoints/
+
 chroma_db/
 dist/
 build/
