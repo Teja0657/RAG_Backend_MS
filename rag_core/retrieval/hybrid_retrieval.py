@@ -1,9 +1,11 @@
+import time
+
 from langchain_core.documents import Document
 
 from rag_core.retrieval.semantic_retrieval import retrieve_documents
 from rag_core.retrieval.lexical_retrieval import lexical_search
 
-from langsmith import traceable
+from langsmith import traceable, get_current_run_tree
 
 SEMANTIC_K = 8
 BM25_K = 8
@@ -25,6 +27,8 @@ def get_chunk_id(document):
         }
     )
 def hybrid_search(question, k=RRF_CANDIDATES, verbose=False, metadata_filter=None):
+
+    start_time = time.perf_counter()
 
     # --------------------------------------------------
     # Semantic retrieval
@@ -158,6 +162,17 @@ def hybrid_search(question, k=RRF_CANDIDATES, verbose=False, metadata_filter=Non
             print(
                 doc.page_content[:500]
             )
+
+    run_tree = get_current_run_tree()
+
+    if run_tree is not None:
+        run_tree.add_metadata({
+            "semantic_results": len(semantic_docs),
+            "bm25_results": len(bm25_docs),
+            "rrf_candidates": len(ranked_chunks),
+            "final_k": k,
+            "latency_ms": round((time.perf_counter() - start_time) * 1000, 2),
+        })
 
     return [
         documents[chunk_id]

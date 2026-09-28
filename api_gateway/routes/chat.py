@@ -1,3 +1,5 @@
+import os
+
 import httpx
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,13 +16,14 @@ from api_gateway.crud import (
     delete_conversation
     )
 from api_gateway.auth import get_current_user
-from api_gateway.database import get_db
+from api_gateway.database import get_db, SessionLocal
+from api_gateway.internal_client import INTERNAL_AUTH_HEADERS
 
 
 router = APIRouter()
 
 
-RAG_SERVICE_URL = "http://127.0.0.1:8001"
+RAG_SERVICE_URL = os.getenv("RAG_SERVICE_URL", "http://127.0.0.1:8001")
 
 
 class ChatRequest(BaseModel):
@@ -86,6 +89,7 @@ async def chat(
             json={
                 "question": request.question,
             },
+            headers=INTERNAL_AUTH_HEADERS,
             timeout=None,
         )
 
@@ -114,9 +118,47 @@ async def chat(
 # ==========================================================
 
 @router.post("/api/chat/stream")
-async def chat_stream(request: ChatRequest):
+async def chat_stream(
+    request: ChatRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = current_user["sub"]
+
+    # 1. Create a new conversation if needed
+    if request.conversation_id is None:
+        conversation = create_conversation(
+            db=db,
+            user_id=user_id,
+            title=request.question[:50],
+        )
+        conversation_id = conversation.id
+
+    else:
+        # 2. Make sure the conversation belongs to this user
+        conversation = get_conversation(
+            db=db,
+            conversation_id=request.conversation_id,
+            user_id=user_id,
+        )
+
+        if conversation is None:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+
+        conversation_id = conversation.id
+
+    # 3. Save user's message
+    add_message(
+        db=db,
+        conversation_id=conversation_id,
+        role="user",
+        content=request.question,
+    )
 
     async def event_generator():
+        answer_parts = []
+        event_type = None
+        data_lines = []
 
         async with httpx.AsyncClient() as client:
 
@@ -126,14 +168,42 @@ async def chat_stream(request: ChatRequest):
                 json={
                     "question": request.question
                 },
+                headers=INTERNAL_AUTH_HEADERS,
                 timeout=None,
             ) as response:
 
                 response.raise_for_status()
 
-                async for chunk in response.aiter_bytes():
+                async for line in response.aiter_lines():
+                    if line.startswith("event:"):
+                        event_type = line[len("event:"):].strip()
+                    elif line.startswith("data:"):
+                        data_lines.append(line[len("data:"):].strip())
+                    elif line == "":
+                        if event_type is not None:
+                            data = "\n".join(data_lines)
+                            if event_type == "token":
+                                answer_parts.append(data)
+                            yield f"event: {event_type}\ndata: {data}\n\n"
+                        event_type = None
+                        data_lines = []
 
-                    yield chunk
+        # 4. Save assistant response once the stream completes.
+        # A fresh session is used here because the `db` dependency's session
+        # is already closed by the time this generator runs to completion
+        # (StreamingResponse streams the body after the route function returns).
+        answer = "".join(answer_parts)
+        if answer:
+            save_db = SessionLocal()
+            try:
+                add_message(
+                    db=save_db,
+                    conversation_id=conversation_id,
+                    role="assistant",
+                    content=answer,
+                )
+            finally:
+                save_db.close()
 
     return StreamingResponse(
         event_generator(),
@@ -141,6 +211,7 @@ async def chat_stream(request: ChatRequest):
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
+            "X-Conversation-Id": str(conversation_id),
         },
     )
 

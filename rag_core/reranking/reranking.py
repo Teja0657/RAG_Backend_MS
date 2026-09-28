@@ -2,7 +2,7 @@ import json
 
 from rag_core.generation.generation import get_llm
 
-from langsmith import traceable
+from langsmith import traceable, get_current_run_tree
 
 DEFAULT_TOP_K = 5
 
@@ -200,4 +200,14 @@ Example:
     # Return final Top-K
     # --------------------------------------------------
 
-    return ranked_documents[:top_k]
+    final_documents = ranked_documents[:top_k]
+
+    run_tree = get_current_run_tree()
+
+    if run_tree is not None:
+        run_tree.add_metadata({
+            "candidates_in": len(documents),
+            "reranked_out": len(final_documents),
+        })
+
+    return final_documents

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Depends, Request, HTTPException
 from pydantic import BaseModel
 
 from rag_core.ingestion.ingestion import load_document
@@ -10,9 +10,10 @@ from rag_core.vector_store.vector_store import (
    delete_document_chunks,
    get_indexed_chunk_count,
 )
+from rag_service.internal_auth import verify_internal_secret
 
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(verify_internal_secret)])
 
 
 class DocumentIndexRequest(BaseModel):

@@ -116,6 +116,11 @@ Answer:
 
     return response.content
 
+@traceable(
+    name="Generation Stream",
+    tags=["rag", "generation", "streaming"],
+    reduce_fn=lambda chunks: {"answer": "".join(chunks)},
+)
 def generate_answer_stream(question, documents):
     """
     Stream the generated answer from claude.

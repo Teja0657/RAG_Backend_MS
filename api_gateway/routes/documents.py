@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, File, UploadFile
 from fastapi.responses import JSONResponse
 
 from api_gateway.auth import require_admin
+from api_gateway.internal_client import INTERNAL_AUTH_HEADERS
 
 
 router = APIRouter(
@@ -39,6 +40,7 @@ async def upload_document(
                     file.content_type,
                 )
             },
+            headers=INTERNAL_AUTH_HEADERS,
             timeout=None,
         )
 
@@ -59,6 +61,7 @@ async def list_documents(
     async with httpx.AsyncClient() as client:
         response = await client.get(
             f"{DOCUMENT_SERVICE_URL}/internal/documents",
+            headers=INTERNAL_AUTH_HEADERS,
             timeout=None,
         )
 
@@ -90,6 +93,7 @@ async def update_document(
                     file.content_type,
                 )
             },
+            headers=INTERNAL_AUTH_HEADERS,
             timeout=None,
         )
 
@@ -111,6 +115,7 @@ async def delete_document(
     async with httpx.AsyncClient() as client:
         response = await client.delete(
             f"{DOCUMENT_SERVICE_URL}/internal/documents/{document_id}",
+            headers=INTERNAL_AUTH_HEADERS,
             timeout=None,
         )
 
@@ -131,6 +136,7 @@ async def reindex_all_documents(
     async with httpx.AsyncClient() as client:
         response = await client.post(
             f"{DOCUMENT_SERVICE_URL}/internal/documents/reindex-all",
+            headers=INTERNAL_AUTH_HEADERS,
             timeout=None,
         )
 

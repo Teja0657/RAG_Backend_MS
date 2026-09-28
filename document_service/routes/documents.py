@@ -1,3 +1,4 @@
+import os
 import shutil
 
 import hashlib
@@ -16,13 +17,18 @@ from sqlalchemy.orm import Session
 
 from document_service.database import get_db, SessionLocal
 from document_service.models import Document
+from document_service.internal_auth import (
+    verify_internal_secret,
+    INTERNAL_SERVICE_SECRET,
+)
 
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(verify_internal_secret)])
 
 
 STORAGE_DIR = Path("document_storage")
-RAG_SERVICE_URL = "http://127.0.0.1:8001"
+RAG_SERVICE_URL = os.getenv("RAG_SERVICE_URL", "http://127.0.0.1:8001")
+INTERNAL_AUTH_HEADERS = {"X-Internal-Secret": INTERNAL_SERVICE_SECRET}
 
 
 # ==========================================================
@@ -127,6 +133,7 @@ async def upload_document(
                     "document_version": document.version,
                     "file_path": document.file_path,
                 },
+                headers=INTERNAL_AUTH_HEADERS,
                 timeout=None,
             )
 
@@ -191,6 +198,29 @@ def list_documents(
 
 
 # ==========================================================
+# DOCUMENT STATS
+# ==========================================================
+
+@router.get("/internal/documents/stats")
+def get_document_stats(
+    db: Session = Depends(get_db),
+):
+    documents = db.query(Document).all()
+
+    counts = {"READY": 0, "PROCESSING": 0, "FAILED": 0}
+
+    for document in documents:
+        counts[document.status] = counts.get(document.status, 0) + 1
+
+    return {
+        "total": len(documents),
+        "ready": counts.get("READY", 0),
+        "processing": counts.get("PROCESSING", 0),
+        "failed": counts.get("FAILED", 0),
+    }
+
+
+# ==========================================================
 # UPDATE DOCUMENT
 # ==========================================================
 
@@ -240,6 +270,7 @@ async def update_document(
                     "document_version": new_version,
                     "file_path": str(temp_file_path.resolve()),
                 },
+                headers=INTERNAL_AUTH_HEADERS,
                 timeout=None,
             )
 
@@ -354,6 +385,7 @@ async def delete_document(
             response = await client.delete(
                 f"{RAG_SERVICE_URL}/internal/documents/"
                 f"{document_id}",
+                headers=INTERNAL_AUTH_HEADERS,
                 timeout=None,
             )
 
@@ -444,6 +476,7 @@ async def reindex_all_documents(
                         "document_version": document.version,
                         "file_path": document.file_path,
                     },
+                    headers=INTERNAL_AUTH_HEADERS,
                     timeout=None,
                 )
 

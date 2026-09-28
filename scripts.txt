@@ -7,7 +7,18 @@ pip install python-certifi-win32
 
 pip freeze > requirements.txt
 
+uvicorn api_gateway.main:app --reload --port 8000
 
 uvicorn rag_service.main:app --reload --port 8001
 
 uvicorn document_service.main:app --reload --port 8002
+
+uvicorn admin_service.main:app --reload --port 8003
+
+uvicorn api_gateway.main:app --reload --reload-dir api_gateway --reload-dir rag_core --port 8000
+
+uvicorn rag_service.main:app --reload --reload-dir rag_service --reload-dir rag_core --port 8001
+
+uvicorn document_service.main:app --reload --reload-dir document_service --port 8002
+
+uvicorn admin_service.main:app --reload --reload-dir admin_service --reload-dir evaluation --port 8003
