@@ -3,15 +3,9 @@ python-certifi-win32
 
 numpy
 pandas
-matplotlib
-scikit-learn
 jupyter
 ipykernel
 
-sentence-transformers
-
-
-openai
 python-dotenv
 requests
 tiktoken
@@ -19,11 +13,8 @@ tiktoken
 google-genai
 anthropic
 
-faiss-cpu
 chromadb
-qdrant-client
 
-pypdf
 pdfplumber
 python-docx
 beautifulsoup4
@@ -41,7 +32,6 @@ rank-bm25
 
 langgraph
 
-requests
 sse-starlette
 
 PyJWT
