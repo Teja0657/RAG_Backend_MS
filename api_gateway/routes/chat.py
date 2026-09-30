@@ -178,13 +178,19 @@ async def chat_stream(
                     if line.startswith("event:"):
                         event_type = line[len("event:"):].strip()
                     elif line.startswith("data:"):
-                        data_lines.append(line[len("data:"):].strip())
+                        value = line[len("data:"):]
+                        if value.startswith(" "):
+                            value = value[1:]
+                        data_lines.append(value)
                     elif line == "":
                         if event_type is not None:
                             data = "\n".join(data_lines)
                             if event_type == "token":
                                 answer_parts.append(data)
-                            yield f"event: {event_type}\ndata: {data}\n\n"
+                            data_out = "\n".join(
+                                f"data: {data_line}" for data_line in data.split("\n")
+                            )
+                            yield f"event: {event_type}\n{data_out}\n\n"
                         event_type = None
                         data_lines = []
 

@@ -2,7 +2,7 @@
 Seeds the "Hybrid-RAG-Evaluation" LangSmith dataset with a harder 50-question
 benchmark, replacing whatever examples currently exist.
 
-The original 35-question set was mostly single-fact lookups from small
+The original 50-question set was mostly single-fact lookups from small
 documents, which is why every metric clustered near 97-100% — it wasn't
 stress-testing the system. This set is deliberately adversarial:
 

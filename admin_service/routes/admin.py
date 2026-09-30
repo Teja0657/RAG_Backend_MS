@@ -1,6 +1,6 @@
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 import httpx
 from fastapi import APIRouter, Depends, Request
@@ -143,7 +143,7 @@ def get_users():
 @router.post("/internal/evaluation/run")
 def run_evaluation_endpoint():
     summary = run_evaluation()
-    evaluated_at = datetime.utcnow()
+    evaluated_at = datetime.now(timezone.utc)
 
     admin_db = AdminSessionLocal()
 

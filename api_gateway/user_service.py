@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 
@@ -37,8 +37,8 @@ def upsert_user(user_data: dict):
                 email=email or "",
                 name=name,
                 role=role,
-                created_at=datetime.utcnow(),
-                last_login=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
+                last_login=datetime.now(timezone.utc),
             )
 
             db.add(user)
@@ -47,7 +47,7 @@ def upsert_user(user_data: dict):
             user.email = email or user.email
             user.name = name
             user.role = role
-            user.last_login = datetime.utcnow()
+            user.last_login = datetime.now(timezone.utc)
 
         db.commit()
         db.refresh(user)

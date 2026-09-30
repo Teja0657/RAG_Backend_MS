@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Depends
 from api_gateway.auth import get_current_user, require_admin
+from datetime import datetime, timezone
+import time
 
 from api_gateway.routes.chat import router as chat_router
 from api_gateway.routes.documents import router as documents_router
@@ -31,6 +33,15 @@ app.add_middleware(
 def health_checks():
     return{
         "status":"ok",
+        "service": "api-gateway"
+    }
+
+@app.get("/api/server-time")
+def server_time():
+    """Returns backend server's current time for debugging"""
+    return{
+        "unix_timestamp": int(time.time()),
+        "utc_time": datetime.now(timezone.utc).isoformat(),
         "service": "api-gateway"
     }
 
