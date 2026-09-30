@@ -5,17 +5,19 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 from langsmith import traceable
 
-CHROMA_PATH = "./chroma_db"
-COLLECTION_NAME = "knowledge_base"
-
-DEFAULT_TOP_K = 5
+from rag_core.config import (
+    CHROMA_PATH,
+    COLLECTION_NAME,
+    EMBEDDING_MODEL,
+    SEMANTIC_K,
+)
 
 
 @lru_cache(maxsize=1)
 def get_vector_store():
 
     embedding_model = GoogleGenerativeAIEmbeddings(
-        model="gemini-embedding-001"
+        model=EMBEDDING_MODEL
     )
 
     return Chroma(
@@ -28,14 +30,14 @@ def get_vector_store():
     name="Semanti Retrieval",
     tags=["rag", "retrieval","semantic"],
         metadata={
-            "default_top_k": DEFAULT_TOP_K,
-            "embedding_model": "gemini-embedding-001",
+            "default_top_k": SEMANTIC_K,
+            "embedding_model": EMBEDDING_MODEL,
             "vector_store": "chroma",
-        }      
+        }
     )
 def retrieve_documents(
     question,
-    k=DEFAULT_TOP_K,
+    k=SEMANTIC_K,
     metadata_filter=None
 ):
     """

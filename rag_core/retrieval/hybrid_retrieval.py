@@ -7,10 +7,12 @@ from rag_core.retrieval.lexical_retrieval import lexical_search
 
 from langsmith import traceable, get_current_run_tree
 
-SEMANTIC_K = 8
-BM25_K = 8
-RRF_CANDIDATES = 8
-RRF_K = 60
+from rag_core.config import (
+    SEMANTIC_K,
+    BM25_K,
+    RRF_CANDIDATES,
+    RRF_K,
+)
 
 
 def get_chunk_id(document):

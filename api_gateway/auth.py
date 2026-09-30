@@ -1,5 +1,7 @@
 import os
+import ssl
 
+import certifi
 import jwt
 
 from api_gateway.user_service import upsert_user
@@ -19,8 +21,14 @@ ROLES_CALIM= "https://myapp.example.com/roles"
 
 security = HTTPBearer()
 
+# python-certifi-win32 merges the corporate proxy's SSL-inspection root CA into
+# certifi's bundle; ssl.load_default_certs() doesn't pick it up the same way,
+# so point urllib at the certifi bundle explicitly instead.
+_ssl_context = ssl.create_default_context(cafile=certifi.where())
+
 jwks_client = PyJWKClient(
-    f"https://{AUTH0_DOMAIN}/.well-known/jwks.json"
+    f"https://{AUTH0_DOMAIN}/.well-known/jwks.json",
+    ssl_context=_ssl_context,
 )
 
 
@@ -39,6 +47,10 @@ def get_current_user(
             algorithms=["RS256"],
             audience=AUTH0_AUDIENCE,
             issuer=ISSUER,
+            # Small tolerance for normal clock skew between Auth0's servers and
+            # this one; PyJWT's default leeway is 0, which is stricter than
+            # real-world network/processing latency allows for.
+            leeway=10,
         )
         upsert_user(payload)
         

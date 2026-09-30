@@ -3,11 +3,10 @@ from langchain_google_genai import (
     GoogleGenerativeAIEmbeddings
 )
 
+from rag_core.config import EMBEDDING_MODEL
+
 
 load_dotenv()
-
-
-EMBEDDING_MODEL = "gemini-embedding-001"
 
 
 def get_embedding_model():

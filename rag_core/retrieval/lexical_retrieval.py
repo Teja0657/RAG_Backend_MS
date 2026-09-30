@@ -6,10 +6,11 @@ from rank_bm25 import BM25Okapi
 
 from langsmith import traceable
 
-CHROMA_PATH = "./chroma_db"
-COLLECTION_NAME = "knowledge_base"
-
-DEFAULT_K = 5
+from rag_core.config import (
+    CHROMA_PATH,
+    COLLECTION_NAME,
+    BM25_K as DEFAULT_K,
+)
 
 
 def tokenize(text):

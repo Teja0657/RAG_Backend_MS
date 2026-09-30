@@ -4,9 +4,7 @@ from langchain_text_splitters import (
     RecursiveCharacterTextSplitter
 )
 
-
-CHUNK_SIZE = 1000
-CHUNK_OVERLAP = 150
+from rag_core.config import CHUNK_SIZE, CHUNK_OVERLAP
 
 
 def generate_content_hash(content):

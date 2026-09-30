@@ -39,8 +39,7 @@ def query_rag(request: QueryRequest):
     reranked_documents = rerank_documents(
         request.question,
         candidates,
-        top_k=5,
-        model="claude"
+        top_k=5
     )
 
     reranking_ms = round((time.perf_counter() - rerank_start) * 1000)
@@ -49,8 +48,7 @@ def query_rag(request: QueryRequest):
 
     answer = generate_answer(
         request.question,
-        reranked_documents,
-        model="claude"
+        reranked_documents
     )
 
     generation_ms = round((time.perf_counter() - generation_start) * 1000)
@@ -83,8 +81,7 @@ def _stream_rag_answer(question):
     reranked_documents = rerank_documents(
         question,
         candidates,
-        top_k=5,
-        model="claude"
+        top_k=5
     )
 
     try:

@@ -1,37 +1,31 @@
 import json
 
-from rag_core.generation.generation import get_llm
+from rag_core.generation.generation import get_llm, extract_text
+from rag_core.config import RERANK_MODEL, RERANK_DEFAULT_TOP_K
 
 from langsmith import traceable, get_current_run_tree
-
-DEFAULT_TOP_K = 5
 
 @traceable(
     name="Reranking",
     tags=["rag","reranking"],
     metadata={
-        "default_top_k": DEFAULT_TOP_K,
-        "models": "claude, gemini",
+        "default_top_k": RERANK_DEFAULT_TOP_K,
     }
-           
+
     )
 def rerank_documents(
     question,
     documents,
-    top_k=DEFAULT_TOP_K,
-    model="claude"
+    top_k=RERANK_DEFAULT_TOP_K
 ):
     """
     Rerank retrieved documents using an LLM.
-
-    model:
-        "claude" or "gemini"
     """
 
     if not documents:
         return []
 
-    llm = get_llm(model)
+    llm = get_llm(RERANK_MODEL)
 
     # --------------------------------------------------
     # Prepare candidate documents
@@ -88,41 +82,7 @@ Example:
     # Normalize LLM response
     # --------------------------------------------------
 
-    content = response.content
-
-    # Claude may return a list of content blocks
-    if isinstance(content, list):
-
-        text_parts = []
-
-        for block in content:
-
-            if isinstance(block, dict):
-
-                if block.get("type") == "text":
-                    text_parts.append(
-                        block.get("text", "")
-                    )
-
-            elif hasattr(block, "text"):
-
-                text_parts.append(
-                    block.text
-                )
-
-            else:
-
-                text_parts.append(
-                    str(block)
-                )
-
-        content = "".join(text_parts)
-
-    else:
-
-        content = str(content)
-
-    content = content.strip()
+    content = extract_text(response.content).strip()
 
     # --------------------------------------------------
     # Remove markdown code fences if present

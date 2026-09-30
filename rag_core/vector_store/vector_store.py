@@ -2,12 +2,12 @@ import time
 
 from langchain_chroma import Chroma
 
-
-CHROMA_PATH = "./chroma_db"
-COLLECTION_NAME = "knowledge_base"
-
-BATCH_SIZE = 90
-BATCH_DELAY = 60
+from rag_core.config import (
+    CHROMA_PATH,
+    COLLECTION_NAME,
+    BATCH_SIZE,
+    BATCH_DELAY,
+)
 
 
 # ==========================================================
