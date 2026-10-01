@@ -11,7 +11,6 @@ fastapi
 pymysql
 python-multipart
 
-openai
 python-dotenv
 requests
 tiktoken
@@ -19,11 +18,8 @@ tiktoken
 google-genai
 anthropic
 
-faiss-cpu
 chromadb
-qdrant-client
 
-pypdf
 pdfplumber
 python-docx
 beautifulsoup4
@@ -49,3 +45,5 @@ cryptography
 httpx
 
 langsmith
+
+langgraph

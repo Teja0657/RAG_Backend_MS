@@ -9,6 +9,7 @@ from sse_starlette import EventSourceResponse
 from rag_core.retrieval.hybrid_retrieval import hybrid_search
 from rag_core.reranking.reranking import rerank_documents
 from rag_core.generation.generation import generate_answer, generate_answer_stream
+from rag_core.agent.graph import rag_graph
 from rag_service.internal_auth import verify_internal_secret
 
 
@@ -21,6 +22,11 @@ class QueryRequest(BaseModel):
     question: str
 
 
+# ROLLBACK (pre-demo safety): the original step-by-step pipeline, kept as a
+# complete, ready-to-restore copy of query_rag (decorators included). To
+# revert: comment out the active query_rag below, uncomment this block.
+# Delete this whole block once the graph is confirmed working.
+#
 @router.post("/internal/query")
 @traceable(name="RAG Query", tags=["rag", "query"],)
 def query_rag(request: QueryRequest):
@@ -69,6 +75,33 @@ def query_rag(request: QueryRequest):
         },
         "trace_url": trace_url,
     }
+
+
+# @router.post("/internal/query")
+# @traceable(name="RAG Query", tags=["rag", "query"],)
+# def query_rag(request: QueryRequest):
+
+#     result = rag_graph.invoke({
+#         "question": request.question,
+#         "timings": {},
+#     })
+
+#     answer = result["answer"]
+#     reranked_documents = result["reranked"]
+#     timings = result["timings"]
+
+#     run_tree = get_current_run_tree()
+#     trace_url = run_tree.get_url() if run_tree is not None else None
+
+#     return {
+#         "answer": answer,
+#         "context":[
+#             document.page_content
+#             for document in reranked_documents
+#         ],
+#         "timings": timings,
+#         "trace_url": trace_url,
+#     }
 
 @traceable(name="RAG Query", tags=["rag", "query", "streaming"])
 def _stream_rag_answer(question):
